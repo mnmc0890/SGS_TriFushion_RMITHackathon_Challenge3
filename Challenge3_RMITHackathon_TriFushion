@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIBE: School Run — Access to Education</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eaf3ff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+    }
+    header {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .menu, .game, .instructions, .result {
+      display: none;
+      text-align: center;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin-top: 20px;
+    }
+    .menu.active, .game.active, .instructions.active, .result.active {
+      display: block;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background-color: #cce0ff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .player {
+      background-color: #007bff;
+      color: white;
+    }
+    .reward {
+      background-color: gold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎓 VIBE: School Run</h1>
+    <p>A short web game about Access to Education — help students reach school by collecting resources and making fair choices.</p>
+  </header>
+
+  <div class="menu active" id="menu">
+    <h2>Menu</h2>
+    <p>Choose a mode and start the journey. Simple, educational, and quick to play (5–10 minutes).</p>
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="showInstructions()">How to Play</button>
+  </div>
+
+  <div class="instructions" id="instructions">
+    <h2>How to Play</h2>
+    <p>🎯 Goal: Collect 5 scholarships (⭐) or transport resources to help 3 students reach school safely!</p>
+    <ul style="text-align:left;">
+      <li>Use the arrow keys ⬆️⬇️⬅️➡️ to move your student.</li>
+      <li>Each gold cell (⭐) gives you 1 scholarship resource.</li>
+      <li>Avoid running out of moves before collecting all 5!</li>
+    </ul>
+    <button onclick="backToMenu()">Back to Menu</button>
+  </div>
+
+  <div class="game" id="game">
+    <h2>🏫 Game Board</h2>
+    <div id="board"></div>
+    <p id="scoreText">Scholarships Collected: 0 / 5</p>
+    <button onclick="backToMenu()">End Game</button>
+  </div>
+
+  <div class="result" id="result">
+    <h2 id="resultText"></h2>
+    <button onclick="backToMenu()">Back to Menu</button>
+  </div>
+
+  <script>
+    let playerPos = { x: 0, y: 0 };
+    let score = 0;
+    const size = 5;
+    let rewards = [];
+
+    function showScreen(id) {
+      document.querySelectorAll('.menu, .instructions, .game, .result')
+        .forEach(div => div.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function showInstructions() {
+      showScreen('instructions');
+    }
+
+    function backToMenu() {
+      showScreen('menu');
+    }
+
+    function startGame() {
+      score = 0;
+      playerPos = { x: 0, y: 0 };
+      rewards = [];
+      showScreen('game');
+      generateBoard();
+      updateBoard();
+      document.addEventListener('keydown', movePlayer);
+    }
+
+    function generateBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.x = j;
+          cell.dataset.y = i;
+          board.appendChild(cell);
+        }
+      }
+      // Generate 5 random rewards
+      while (rewards.length < 5) {
+        const rx = Math.floor(Math.random() * size);
+        const ry = Math.floor(Math.random() * size);
+        if (!(rx === 0 && ry === 0) && !rewards.some(r => r.x === rx && r.y === ry)) {
+          rewards.push({ x: rx, y: ry });
+        }
+      }
+    }
+
+    function updateBoard() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        const x = parseInt(cell.dataset.x);
+        const y = parseInt(cell.dataset.y);
+        cell.className = 'cell';
+        cell.textContent = '';
+        if (x === playerPos.x && y === playerPos.y) {
+          cell.classList.add('player');
+          cell.textContent = '🎒';
+        } else if (rewards.some(r => r.x === x && r.y === y)) {
+          cell.classList.add('reward');
+          cell.textContent = '⭐';
+        }
+      });
+      document.getElementById('scoreText').textContent = `Scholarships Collected: ${score} / 5`;
+      if (score >= 5) {
+        winGame();
+      }
+    }
+
+    function movePlayer(e) {
+      switch (e.key) {
+        case 'ArrowUp': if (playerPos.y > 0) playerPos.y--; break;
+        case 'ArrowDown': if (playerPos.y < size - 1) playerPos.y++; break;
+        case 'ArrowLeft': if (playerPos.x > 0) playerPos.x--; break;
+        case 'ArrowRight': if (playerPos.x < size - 1) playerPos.x++; break;
+      }
+      collectReward();
+      updateBoard();
+    }
+
+    function collectReward() {
+      const index = rewards.findIndex(r => r.x === playerPos.x && r.y === playerPos.y);
+      if (index >= 0) {
+        rewards.splice(index, 1);
+        score++;
+      }
+    }
+
+    function winGame() {
+      document.removeEventListener('keydown', movePlayer);
+      showScreen('result');
+      document.getElementById('resultText').textContent = "🎉 You did it! All 3 students reached school safely!";
+    }
+  </script>
+</body>
+</html>
